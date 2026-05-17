@@ -1,0 +1,830 @@
+AI Lab Final Project Work Log and Viva Preparation
+Project: EarthScan AI
+Title: Building Damage Assessment from Pre/Post Satellite Images using CNN and CNN+KNN
+Course: AIL 201 - Artificial Intelligence Lab
+Last updated: 17 May 2026
+
+============================================================
+1. Project Goal
+============================================================
+
+EarthScan AI is a desktop web-based AI application for building damage
+assessment from satellite imagery. The user uploads:
+
+1. A pre-disaster satellite image.
+2. A matching post-disaster satellite image.
+
+The system predicts one of four image-level building damage classes:
+
+- no-damage
+- minor-damage
+- major-damage
+- destroyed
+
+The project includes:
+
+- Python backend using Flask.
+- Trained CNN model.
+- CNN+KNN hybrid model.
+- Web-based frontend.
+- Matplotlib evaluation visualizations.
+- Visual-change heatmap.
+- README and IEEE-format LaTeX report.
+
+Important project folder:
+
+D:\Dataset\Dataset
+
+============================================================
+2. Teacher Requirements and How This Project Satisfies Them
+============================================================
+
+Requirement: Unique/original project
+Status: Satisfied
+Explanation: The project solves disaster building damage assessment using
+pre/post satellite image pairs and compares CNN with CNN+KNN.
+
+Requirement: Functional desktop web-based interface
+Status: Satisfied
+Location: frontend-AI-LAB/
+Run command:
+python frontend-AI-LAB\app.py
+Open:
+http://127.0.0.1:5000
+
+Requirement: User input and meaningful output
+Status: Satisfied
+Input: pre-disaster image and matching post-disaster image
+Output: CNN prediction, CNN+KNN prediction, confidence scores, confidence
+chart, heatmap, and evaluation visualizations.
+
+Requirement: Must include ML model
+Status: Satisfied
+Models used:
+- CNN
+- CNN+KNN
+
+Requirement: Dataset must be described
+Status: Satisfied in README, report, and this work log.
+
+Requirement: Functional web interface
+Status: Satisfied through Flask app and frontend template.
+
+Requirement: GitHub repository with README and requirements.txt
+Status: README and requirements.txt are present. Public GitHub upload is the
+remaining submission step.
+
+Requirement: At least one Matplotlib visualization
+Status: Satisfied
+Matplotlib visualizations included in:
+frontend-AI-LAB/static/visualizations/
+
+Requirement: Minimum 5 runs with mean +/- standard deviation
+Status: Satisfied
+Final evaluation uses 5 runs, 10 epochs, batch size 16.
+
+============================================================
+3. Dataset Details
+============================================================
+
+Dataset name:
+xBD / xView2 Challenge Dataset
+
+Official dataset page:
+https://xview2.org/dataset
+
+Kaggle mirror:
+https://www.kaggle.com/datasets/tunguz/xview2-challenge-dataset-train-and-test/data
+
+Local raw dataset folder:
+Full dataset/
+
+Detected local labeled training structure:
+Full dataset/train/train/images
+Full dataset/train/train/labels
+
+The official test split does not contain labels, so this project uses the
+labeled training split and creates its own train/validation/test split.
+
+Original labeled pairs:
+- Pre-disaster label files: 2799
+- Post-disaster label files: 2799
+- Complete pre/post pairs: 2799
+
+Final processed dataset:
+processed_balanced_pairs_256/
+
+Final split:
+- Training: 1959 samples
+- Validation: 420 samples
+- Testing: 420 samples
+- Total: 2799 samples
+
+Class counts:
+
+Training:
+- no-damage: 1196
+- minor-damage: 292
+- major-damage: 301
+- destroyed: 170
+
+Validation:
+- no-damage: 257
+- minor-damage: 63
+- major-damage: 64
+- destroyed: 36
+
+Testing:
+- no-damage: 256
+- minor-damage: 63
+- major-damage: 64
+- destroyed: 37
+
+Important clarification:
+Earlier experiments also tested a smaller balanced subset, but the final
+256x256 model uses all 2799 labeled pre/post pairs with class weights to
+handle imbalance. In viva and report, describe the final dataset as:
+"full labeled paired xBD subset with stratified split and class-weighted
+training."
+
+============================================================
+4. Labeling Method
+============================================================
+
+The xBD post-disaster JSON files contain building polygons and damage
+subtypes. Since this project is image-level classification, one label is
+assigned to each image pair.
+
+Method:
+- Read post-disaster JSON file.
+- Extract building damage labels.
+- Choose the most severe damage level present in the image.
+
+Severity order:
+1. no-damage
+2. minor-damage
+3. major-damage
+4. destroyed
+
+Why this method was used:
+Each satellite tile may contain multiple buildings with different damage
+levels. Selecting the most severe visible damage gives one clear target label
+for image-level classification.
+
+============================================================
+5. Preprocessing Pipeline
+============================================================
+
+Script:
+preprocess_balanced_pairs.py
+
+Final processed folder:
+processed_balanced_pairs_256/
+
+Preprocessing steps:
+
+1. Load pre-disaster image.
+2. Load matching post-disaster image.
+3. Convert OpenCV BGR format to RGB.
+4. Resize both images to 256 x 256.
+5. Convert to float32.
+6. Normalize pixel values to [0, 1].
+7. Concatenate pre and post images on channel axis.
+
+Final input shape:
+256 x 256 x 6
+
+Channel layout:
+- channels 0-2: pre-disaster RGB image
+- channels 3-5: post-disaster RGB image
+
+Split ratio:
+- Train: 70 percent
+- Validation: 15 percent
+- Test: 15 percent
+
+Verification:
+verify_data_split.py confirmed:
+- correct array shapes
+- normalized values
+- no split overlap
+- no missing image paths
+- augmentation allowed only for training
+
+============================================================
+6. Augmentation
+============================================================
+
+Script:
+paired_augmentation.py
+
+Augmentation is applied dynamically during training only.
+Validation and test sets are not augmented.
+
+Why:
+Validation and test data must represent original unseen data. Augmenting them
+would make evaluation unfair.
+
+Important paired-image rule:
+The same random spatial transform is applied to both pre and post images.
+
+Why:
+If pre and post images receive different rotations or shifts, the pair becomes
+misaligned and the model may learn false differences.
+
+Final augmentation config:
+- rotation_range: 30
+- width_shift_range: 0.1
+- height_shift_range: 0.1
+- zoom_range: 0.1
+- shear_range: 5
+- horizontal_flip: true
+- vertical_flip: true
+- brightness_range: 0.9 to 1.1
+- channel_shift_range: 0.05
+- fill_mode: nearest
+
+============================================================
+7. Model 1: CNN
+============================================================
+
+Script:
+train_evaluate_models.py
+
+Model type:
+Siamese-style CNN with MobileNetV2 backbone.
+
+Input:
+256 x 256 x 6 paired image.
+
+Architecture concept:
+
+1. Split the input into:
+   - pre image: channels 0-2
+   - post image: channels 3-5
+
+2. Scale both images from [0, 1] to [-1, 1] because MobileNetV2 expects this
+   input range.
+
+3. Use one shared MobileNetV2 backbone for both images.
+
+4. Extract:
+   - pre-disaster features
+   - post-disaster features
+   - temporal difference features = post features - pre features
+
+5. Concatenate these features.
+
+6. Apply classification head:
+   - Conv2D
+   - BatchNormalization
+   - GlobalAveragePooling
+   - Dense layers
+   - Dropout
+   - Softmax output
+
+Output classes:
+4 damage classes.
+
+Why CNN is suitable:
+CNNs are strong for image classification because they learn spatial patterns,
+textures, shapes, and visual changes in satellite imagery.
+
+============================================================
+8. Model 2: CNN+KNN
+============================================================
+
+Model type:
+Hybrid deep feature extraction plus traditional ML classifier.
+
+Process:
+
+1. Train CNN model.
+2. Use the CNN feature layer named "features" as a feature extractor.
+3. Extract 128-dimensional deep features from each image pair.
+4. Standardize features using StandardScaler.
+5. Train KNeighborsClassifier.
+
+KNN settings:
+- n_neighbors: 5
+- weights: distance
+
+Why CNN+KNN is useful:
+CNN learns image features. KNN classifies samples by comparing their extracted
+feature vectors. This demonstrates both deep learning and classical machine
+learning in one project.
+
+Viva explanation:
+CNN directly predicts using softmax. CNN+KNN uses CNN only to extract features,
+then KNN performs the final classification.
+
+============================================================
+9. Final Training and Evaluation
+============================================================
+
+Final command used:
+
+python train_evaluate_models.py --processed-dir processed_balanced_pairs_256 --models-dir models_final_aug_256_15ep_b16 --visualizations-dir viz_final_aug_256_15ep_b16 --runs 5 --epochs 10 --batch-size 16
+
+Note:
+The folder name contains "15ep", but the actual final run used 10 epochs.
+This is confirmed by:
+models_final_aug_256_15ep_b16/five_run_evaluation_summary.json
+and each run history.csv.
+
+Final training setup:
+- Runs: 5
+- Epochs requested: 10
+- Batch size: 16
+- Augmentation: true
+- Validation augmentation: false
+- Test augmentation: false
+- KNN k: 5
+
+Final output folder:
+models_final_aug_256_15ep_b16/
+
+Final visualization folder:
+viz_final_aug_256_15ep_b16/
+
+Files produced:
+- five_run_evaluation_summary.json
+- five_run_metrics.csv
+- class_weights.json
+- run_01 to run_05 model folders
+- CNN models
+- CNN feature extractors
+- CNN+KNN joblib files
+- histories
+- metrics
+- confusion matrices
+- training accuracy/loss plots
+- five-run mean/std chart
+
+============================================================
+10. Final Results
+============================================================
+
+Final 5-run mean +/- standard deviation:
+
+CNN:
+- Accuracy: 67.10% +/- 1.73%
+- Precision: 67.81% +/- 3.10%
+- Recall: 67.10% +/- 1.73%
+- F1-score: 66.51% +/- 2.48%
+
+CNN+KNN:
+- Accuracy: 69.14% +/- 2.84%
+- Precision: 66.57% +/- 3.43%
+- Recall: 69.14% +/- 2.84%
+- F1-score: 67.10% +/- 3.07%
+
+Best run:
+run_02
+
+Run 02 metrics:
+
+CNN:
+- Accuracy: 69.29%
+- Precision: 71.71%
+- Recall: 69.29%
+- F1-score: 69.80%
+
+CNN+KNN:
+- Accuracy: 72.14%
+- Precision: 69.73%
+- Recall: 72.14%
+- F1-score: 69.74%
+
+Why run_02 is used in backend:
+The app needs one concrete trained model to make predictions. The 5-run mean
+is an evaluation summary, not a model. Therefore, run_02 was selected because
+it had the best final CNN+KNN accuracy.
+
+Report rule:
+- Use 5-run mean +/- std for final results.
+- Use run_02 model files for backend prediction.
+
+============================================================
+11. Backend
+============================================================
+
+Backend folder:
+frontend-AI-LAB/
+
+Main backend file:
+frontend-AI-LAB/app.py
+
+Framework:
+Flask
+
+Important endpoints:
+
+GET /
+- Serves the web interface.
+
+GET /api/health
+- Checks model files and app readiness.
+
+GET /api/metrics
+- Returns final 5-run evaluation metrics and chart values.
+
+POST /api/predict
+- Accepts pre_image and post_image.
+- Runs preprocessing.
+- Runs CNN.
+- Runs CNN feature extractor and CNN+KNN.
+- Returns predictions, class confidence values, chart values, and heatmap.
+
+Backend model files used:
+models_final_aug_256_15ep_b16/run_02/cnn_model.keras
+models_final_aug_256_15ep_b16/run_02/cnn_feature_extractor.keras
+models_final_aug_256_15ep_b16/run_02/cnn_knn.joblib
+
+Important Keras loading detail:
+The model uses Lambda layers, so backend loads trusted local models using:
+safe_mode=False
+
+============================================================
+12. Frontend
+============================================================
+
+Frontend folder:
+frontend-AI-LAB/
+
+Important files:
+- templates/index.html
+- static/css/style.css
+- static/js/app.js
+- static/bg.jpg
+- static/visualizations/
+
+Frontend features:
+
+- Upload tab
+- Pre-disaster image upload
+- Post-disaster image upload
+- Model selector
+- Loading screen
+- Results tab
+- CNN result card
+- CNN+KNN result card
+- Confidence chart
+- Visual-change heatmap
+- About tab
+- Dataset/project description
+- Matplotlib visualizations
+
+Model selector:
+
+Both models:
+- backend returns CNN and CNN+KNN results
+- frontend displays both models and comparison chart
+
+CNN only:
+- frontend emphasizes CNN result
+
+CNN+KNN only:
+- frontend emphasizes CNN+KNN result
+
+Important note:
+For comparison and consistent display, the backend can return both model
+outputs, while the frontend uses the selected option to decide what to show or
+emphasize.
+
+============================================================
+13. Heatmap
+============================================================
+
+Heatmap type:
+Visual-change heatmap
+
+This is not pixel-level damage segmentation.
+
+How it works:
+
+1. Take pre image and post image after resizing/normalization.
+2. Compute absolute RGB difference.
+3. Average difference across RGB channels.
+4. Smooth the difference map.
+5. Normalize values.
+6. Apply color map.
+7. Overlay the heatmap on the post-disaster image.
+
+Color meaning:
+- Red/yellow: high visual change, possible damaged area
+- Green/cyan: moderate visual change
+- Blue/purple: low visual change
+
+Important viva explanation:
+The heatmap supports visual interpretation only. The final damage class comes
+from CNN and CNN+KNN. The heatmap may highlight clouds, vegetation, lighting,
+or terrain changes, so it should not be described as exact damaged building
+segmentation.
+
+============================================================
+14. Matplotlib Visualizations
+============================================================
+
+Requirement:
+The project must include at least one Matplotlib visualization.
+
+Final Matplotlib charts:
+frontend-AI-LAB/static/visualizations/five_run_mean_std.png
+frontend-AI-LAB/static/visualizations/run02_training_accuracy_loss.png
+frontend-AI-LAB/static/visualizations/run02_cnn_confusion_matrix.png
+frontend-AI-LAB/static/visualizations/run02_cnn_knn_confusion_matrix.png
+
+These are also available in:
+viz_final_aug_256_15ep_b16/
+
+Where shown in app:
+About tab -> Evaluation Visualizations
+
+============================================================
+15. README and Report
+============================================================
+
+README file:
+README.md
+
+README includes:
+- project overview
+- features
+- dataset links
+- runtime vs retraining data requirement
+- setup instructions
+- model artifact notes
+- folder structure
+- final evaluation results
+- GitHub upload guidance
+
+LaTeX report:
+AI_Lab_Final_Report_IEEE.tex
+
+Report format:
+IEEE double-column format
+
+Report includes:
+- cover page
+- summary
+- technologies used
+- dataset description
+- sample row
+- ML model explanation
+- system architecture diagram
+- screenshot placeholders
+- results and evaluation
+- Matplotlib charts
+- GitHub link placeholder
+- conclusion
+
+============================================================
+16. GitHub Upload Guidance
+============================================================
+
+GitHub does not allow normal upload of files larger than 100 MB.
+
+Files too large:
+- cnn_model.keras is about 129 MB per run.
+- raw dataset is about 10+ GB.
+- processed NumPy arrays are about 4+ GB.
+
+Do not upload:
+- venv/
+- Full dataset/
+- processed_balanced_pairs_256/
+- __pycache__/
+- old experiment folders
+
+Recommended upload:
+- source code files
+- frontend-AI-LAB/
+- README.md
+- requirements.txt
+- AI_Lab_Final_Report_IEEE.tex or report PDF
+- final metrics JSON/CSV
+- final visualization PNG files
+
+Model artifact options:
+
+Option 1:
+Use Git LFS for model files.
+
+Option 2:
+Upload model files to Google Drive or Hugging Face and include the download
+link in README.
+
+Option 3:
+For class demo, run locally on the laptop with model files already present,
+and GitHub contains code plus setup instructions.
+
+============================================================
+17. Runtime Dataset Requirement
+============================================================
+
+Question:
+Does the full dataset need to be present in the folder at runtime?
+
+Answer:
+No, not for normal prediction demo.
+
+The running web app needs:
+- frontend-AI-LAB/
+- final run_02 model files
+- final metric JSON/CSV files
+- final visualization PNG files
+
+The running app does not need:
+- Full dataset/
+- processed_balanced_pairs_256/
+
+When is Full dataset/ needed?
+- When recreating pairs
+- When preprocessing from raw images
+- When retraining from scratch
+- When selecting sample images from the original dataset
+
+When is processed_balanced_pairs_256/ needed?
+- When training/evaluating again without reprocessing raw images
+- It is not needed for prediction-only app usage
+
+Important:
+For demo input, users still need some pre/post satellite image pair to upload.
+This can be a small sample pair, not the whole dataset.
+
+============================================================
+18. Current Clean Project Structure After Cleanup
+============================================================
+
+Kept important folders/files:
+
+- frontend-AI-LAB/
+- Full dataset/
+- processed_balanced_pairs_256/
+- dataset_work/
+- augmentation_checks/
+- models_final_aug_256_15ep_b16/
+- viz_final_aug_256_15ep_b16/
+- train_evaluate_models.py
+- preprocess_balanced_pairs.py
+- paired_augmentation.py
+- verify_data_split.py
+- verify_balanced_dataset.py
+- create_balanced_pairs.py
+- requirements.txt
+- README.md
+- AI_Lab_Final_Report_IEEE.tex
+- project_work_log.txt
+
+Removed old/non-final outputs:
+
+- models_1run_noaug_25
+- models_final_aug_256_10ep
+- models_quick_aug_256
+- models_quick_noaug_256
+- models_smoke_v2
+- models_tune_aug
+- models_tune_gentle_aug
+- viz_1run_noaug_25
+- viz_final_aug_256_10ep
+- viz_quick_aug_256
+- viz_quick_noaug_256
+- viz_smoke_v2
+- viz_tune_aug
+- viz_tune_gentle_aug
+- processed_balanced_pairs
+- __pycache__ folders
+- temporary .bak files
+
+Final model/results were not removed.
+
+============================================================
+19. How to Run the Application
+============================================================
+
+Open PowerShell:
+
+cd D:\Dataset\Dataset
+
+Activate virtual environment:
+
+..\venv\Scripts\Activate.ps1
+
+If activation is blocked:
+
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+..\venv\Scripts\Activate.ps1
+
+Run app:
+
+python frontend-AI-LAB\app.py
+
+Open browser:
+
+http://127.0.0.1:5000
+
+============================================================
+20. How to Test the App
+============================================================
+
+Use matching pre/post images from:
+Full dataset/train/train/images
+
+Example naming pattern:
+hurricane-michael_00000004_pre_disaster.png
+hurricane-michael_00000004_post_disaster.png
+
+Why matching IDs matter:
+The model compares the same location before and after disaster. If images are
+from different locations, the model compares unrelated areas and predictions
+become unreliable.
+
+Test steps:
+
+1. Open Upload tab.
+2. Upload pre-disaster image.
+3. Upload matching post-disaster image.
+4. Select model option.
+5. Click Analyze Damage.
+6. View predictions, confidence chart, heatmap, and results.
+
+============================================================
+21. Viva Preparation Questions
+============================================================
+
+Q: What problem does the project solve?
+A: It predicts building damage severity from pre and post-disaster satellite
+images.
+
+Q: What are the input and output?
+A: Input is a matching pre/post satellite image pair. Output is a damage class
+with confidence scores from CNN and CNN+KNN.
+
+Q: Why do pre and post images need the same ID?
+A: Same ID means same location. The model learns disaster change from before
+and after images of the same area.
+
+Q: What is the final input shape?
+A: 256 x 256 x 6.
+
+Q: Why 6 channels?
+A: 3 RGB channels from pre-disaster image plus 3 RGB channels from
+post-disaster image.
+
+Q: Which model is used in backend?
+A: The backend uses run_02 from the final 5-run experiment because it achieved
+the best CNN+KNN accuracy.
+
+Q: Why report 5-run mean instead of only best run?
+A: 5-run mean and standard deviation measure stability and satisfy the project
+requirement. Best run is used only for the deployed app model.
+
+Q: What is CNN+KNN?
+A: CNN extracts deep visual features. KNN classifies the extracted feature
+vectors.
+
+Q: Is the heatmap exact damage localization?
+A: No. It is a visual-change heatmap. It helps interpret pre/post differences
+but the final damage class comes from the trained models.
+
+Q: Why use class weights?
+A: The final full paired dataset is imbalanced, so class weights reduce bias
+toward majority classes.
+
+Q: Does the app need the full dataset to run?
+A: No. The app needs trained model files. The dataset is needed only for
+retraining or for selecting sample images.
+
+Q: What are the final results?
+A: CNN+KNN achieved 69.14% +/- 2.84% accuracy over 5 runs. CNN achieved
+67.10% +/- 1.73% accuracy.
+
+============================================================
+22. Final Status
+============================================================
+
+Completed:
+- Dataset inspection
+- Pre/post pairing
+- 256x256 preprocessing
+- Data split verification
+- Paired augmentation
+- CNN model
+- CNN+KNN model
+- 5-run evaluation
+- Final model selection
+- Flask backend
+- Frontend connection
+- Heatmap support
+- Matplotlib visualizations
+- README
+- IEEE LaTeX report
+- Cleanup of old experiment folders
+
+Remaining before submission:
+- Add actual screenshots to report.
+- Add GitHub link to README/report.
+- Upload repository to GitHub.
+- Add model artifact download link or Git LFS.
+- Export final report PDF.

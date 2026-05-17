@@ -1,0 +1,43 @@
+{
+  "balanced_pairs_csv": "dataset_work\\balanced_pairs_index.csv",
+  "total_pairs": 760,
+  "expected_pairs_per_class": 190,
+  "class_counts": {
+    "destroyed": 190,
+    "major-damage": 190,
+    "no-damage": 190,
+    "minor-damage": 190
+  },
+  "disaster_type_counts": {
+    "wind": 207,
+    "flooding": 324,
+    "fire": 175,
+    "tsunami": 18,
+    "earthquake": 30,
+    "volcano": 6
+  },
+  "disaster_counts": {
+    "hurricane-michael": 130,
+    "hurricane-florence": 124,
+    "hurricane-harvey": 108,
+    "midwest-flooding": 92,
+    "socal-fire": 141,
+    "hurricane-matthew": 77,
+    "palu-tsunami": 18,
+    "mexico-earthquake": 30,
+    "santa-rosa-wildfire": 34,
+    "guatemala-volcano": 6
+  },
+  "class_csv_outputs": {
+    "no-damage": "dataset_work\\balanced_class_indexes\\no_damage.csv",
+    "minor-damage": "dataset_work\\balanced_class_indexes\\minor_damage.csv",
+    "major-damage": "dataset_work\\balanced_class_indexes\\major_damage.csv",
+    "destroyed": "dataset_work\\balanced_class_indexes\\destroyed.csv"
+  },
+  "charts": {
+    "class_distribution": "dataset_work\\balanced_class_distribution.png",
+    "disaster_type_distribution": "dataset_work\\balanced_disaster_type_distribution.png"
+  },
+  "errors": [],
+  "warnings": []
+}

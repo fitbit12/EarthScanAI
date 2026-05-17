@@ -1,0 +1,37 @@
+{
+  "augmentation_applies_to": "training pairs only",
+  "validation_augmentation": false,
+  "test_augmentation": false,
+  "same_transform_for_pre_and_post": true,
+  "input_shape": [
+    128,
+    128,
+    6
+  ],
+  "batch_shape_example": [
+    8,
+    128,
+    128,
+    6
+  ],
+  "batch_label_shape_example": [
+    8
+  ],
+  "batch_min": 0.0,
+  "batch_max": 1.0,
+  "augmentation_config": {
+    "rotation_range": 40,
+    "width_shift_range": 0.2,
+    "height_shift_range": 0.2,
+    "zoom_range": 0.2,
+    "shear_range": 20,
+    "horizontal_flip": true,
+    "brightness_range": [
+      0.5,
+      1.5
+    ],
+    "channel_shift_range": 25.5,
+    "fill_mode": "nearest"
+  },
+  "preview": "augmentation_checks\\paired_augmentation_preview.png"
+}

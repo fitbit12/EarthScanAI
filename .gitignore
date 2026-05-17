@@ -1,0 +1,31 @@
+# Python cache and local environment
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Local Flask/runtime files
+uploads/
+*.log
+
+# Large datasets - download separately using the README links
+Full dataset/
+processed_balanced_pairs/
+processed_balanced_pairs_256/
+
+# Large trained model binaries - keep locally or share with Git LFS/Drive
+*.keras
+*.h5
+*.joblib
+*.pkl
+
+# Old local backup files
+*.bak
+*.before_*.bak
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

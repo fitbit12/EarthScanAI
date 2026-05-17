@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EarthScan AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body>
+
+<div class="overlay"></div>
+
+<div class="app-root">
+
+  <!-- TOP NAV -->
+  <div class="top-nav">
+    <div class="top-nav-left">
+      <div class="top-nav-dot"></div>
+      <span class="top-nav-name">EarthScan AI</span>
+      <span class="top-nav-pill">AIL 201 Project</span>
+    </div>
+    <div class="top-nav-tabs">
+      <button class="top-nav-tab active" data-tab="upload">Upload</button>
+      <button class="top-nav-tab" data-tab="results">Results</button>
+      <button class="top-nav-tab" data-tab="about">About</button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: UPLOAD ══ -->
+  <div class="screen active" id="screen-upload">
+
+    <!-- Upload form -->
+    <div id="upload-form" class="upload-screen-wrap">
+      <div class="upload-screen-inner">
+
+        <!-- Header -->
+        <div class="upload-screen-title">Satellite building damage predictor</div>
+        <div class="upload-screen-subtitle">Upload pre and post-disaster satellite imagery to assess structural damage severity with the final trained CNN and CNN+KNN models</div>
+        <hr class="upload-screen-divider" />
+
+        <!-- Upload boxes -->
+        <div class="upload-boxes-grid">
+          <!-- PRE -->
+          <div class="upload-box pre" id="box-pre">
+            <input type="file" accept=".png,.jpg,.jpeg,.tif,.tiff" id="input-pre" />
+            <div class="upload-loaded-badge" id="badge-pre">✓ Loaded</div>
+             <button type="button" class="upload-clear-btn" id="clear-pre" aria-label="Clear pre-disaster image">×</button>
+            <span class="upload-box-pill pre">Pre-Disaster</span>
+            <div class="upload-box-icon" style="color:#6a8c4a">⬆</div>
+            <img class="upload-box-preview" id="preview-pre" alt="Pre-disaster preview" />
+            <div class="upload-box-label">Before disaster image</div>
+            <div class="upload-box-hint">PNG · JPG · TIF accepted</div>
+            <div class="upload-box-filename" id="filename-pre"></div>
+          </div>
+          <!-- POST -->
+          <div class="upload-box post" id="box-post">
+            <input type="file" accept=".png,.jpg,.jpeg,.tif,.tiff" id="input-post" />
+            <div class="upload-loaded-badge" id="badge-post">✓ Loaded</div>
+             <button type="button" class="upload-clear-btn" id="clear-post" aria-label="Clear post-disaster image">×</button>
+            <span class="upload-box-pill post">Post-Disaster</span>
+            <div class="upload-box-icon" style="color:#d4762a">⬆</div>
+            <img class="upload-box-preview" id="preview-post" alt="Post-disaster preview" />
+            <div class="upload-box-label">After disaster image</div>
+            <div class="upload-box-hint">PNG · JPG · TIF accepted</div>
+            <div class="upload-box-filename" id="filename-post"></div>
+          </div>
+        </div>
+
+        <!-- Model selector -->
+        <div class="upload-model-row">
+          <span class="upload-model-label">Select model</span>
+          <select class="upload-model-select" id="model-select">
+            <option value="both">Both models (CNN vs CNN+KNN)</option>
+            <option value="cnn">CNN only</option>
+            <option value="cnnknn">CNN+KNN only</option>
+          </select>
+        </div>
+
+        <!-- Analyze button -->
+        <button class="upload-analyze-btn" id="analyze-btn" disabled>Analyze Damage</button>
+        <button type="button" class="upload-reset-btn" id="upload-reset-btn">Reset selections</button>
+        <div class="upload-hint-text">
+          Use high-resolution satellite imagery only &nbsp;·&nbsp; Results are AI-generated estimates
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Loading card -->
+    <div id="loading-overlay" class="loading-overlay">
+      <div class="loading-card">
+        <div class="loading-spinner"></div>
+        <div class="loading-message" id="loading-msg">Reading satellite imagery...</div>
+        <div class="loading-steps">
+          <div class="loading-step active" id="lstep-0"><div class="loading-step-dot"></div>Reading satellite imagery</div>
+          <div class="loading-step"        id="lstep-1"><div class="loading-step-dot"></div>Preprocessing 256×256 pair</div>
+          <div class="loading-step"        id="lstep-2"><div class="loading-step-dot"></div>Running CNN model</div>
+          <div class="loading-step"        id="lstep-3"><div class="loading-step-dot"></div>Running CNN + KNN model</div>
+          <div class="loading-step"        id="lstep-4"><div class="loading-step-dot"></div>Comparing results</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /screen-upload -->
+
+  <!-- ══ SCREEN: RESULTS ══ -->
+  <div class="screen" id="screen-results">
+    <div class="results-screen-inner">
+      <div class="results-image-row">
+        <div class="results-image-card fade-in" data-entrance="image-left">
+          <img class="results-thumb" id="result-thumb-pre" alt="Pre-disaster thumbnail" />
+          <div class="results-thumb-placeholder" id="result-thumb-pre-placeholder"></div>
+          <div class="results-thumb-label">Pre-disaster</div>
+        </div>
+        <div class="results-image-card fade-in" data-entrance="image-right">
+          <img class="results-thumb" id="result-thumb-post" alt="Post-disaster thumbnail" />
+          <div class="results-thumb-placeholder" id="result-thumb-post-placeholder"></div>
+          <div class="results-thumb-label">Post-disaster</div>
+        </div>
+      </div>
+
+      <div class="heatmap-card fade-in" data-entrance="heatmap">
+        <div class="chart-label">Pre/Post Change Heatmap</div>
+        <img class="heatmap-image" id="change-heatmap" alt="Pre and post-disaster change heatmap" />
+        <div class="heatmap-legend" aria-label="Heatmap color legend">
+          <div class="heatmap-legend-item">
+            <span class="heatmap-swatch heatmap-swatch-high"></span>
+            <span>Red / yellow: high visual change, possible damaged area</span>
+          </div>
+          <div class="heatmap-legend-item">
+            <span class="heatmap-swatch heatmap-swatch-medium"></span>
+            <span>Green / cyan: moderate visual change</span>
+          </div>
+          <div class="heatmap-legend-item">
+            <span class="heatmap-swatch heatmap-swatch-low"></span>
+            <span>Blue / purple: low visual change</span>
+          </div>
+        </div>
+        <div class="heatmap-meta">
+          <span id="heatmap-method">Absolute RGB change overlay</span>
+          <span id="heatmap-change-score">Mean change: --</span>
+        </div>
+      </div>
+
+      <div class="results-model-row">
+        <div class="result-model-card fade-in" data-entrance="model-left">
+          <div class="result-model-header">CNN MODEL</div>
+          <div class="damage-badge major" id="cnn-prediction-badge">Waiting for upload</div>
+          <div class="confidence-list">
+            <div>
+              <div class="confidence-row"><span>No damage</span><span id="cnn-score-0">0%</span></div>
+              <div class="confidence-track"><div class="confidence-fill no-damage" id="cnn-fill-0" style="width: 0%"></div></div>
+            </div>
+            <div>
+              <div class="confidence-row"><span>Minor</span><span id="cnn-score-1">0%</span></div>
+              <div class="confidence-track"><div class="confidence-fill minor" id="cnn-fill-1" style="width: 0%"></div></div>
+            </div>
+            <div>
+              <div class="confidence-row"><span>Major</span><span id="cnn-score-2">0%</span></div>
+              <div class="confidence-track"><div class="confidence-fill major" id="cnn-fill-2" style="width: 0%"></div></div>
+            </div>
+            <div>
+              <div class="confidence-row"><span>Destroyed</span><span id="cnn-score-3">0%</span></div>
+              <div class="confidence-track"><div class="confidence-fill destroyed" id="cnn-fill-3" style="width: 0%"></div></div>
+            </div>
+          </div>
+          <hr class="result-divider" />
+          <div class="result-accuracy-row">
+            <span class="result-accuracy-label">5-run accuracy</span>
+            <span class="result-accuracy-value" id="cnn-accuracy-value">67.10% +/- 1.73%</span>
+          </div>
+        </div>
+
+        <div class="result-model-card fade-in" data-entrance="model-right">
+          <div class="result-model-header">CNN + KNN MODEL</div>
+          <div class="damage-badge destroyed" id="cnnknn-prediction-badge">Waiting for upload</div>
+          <div class="confidence-list">
+            <div>
+              <div class="confidence-row"><span>No damage</span><span id="cnnknn-score-0">0%</span></div>
+              <div class="confidence-track"><div class="confidence-fill no-damage" id="cnnknn-fill-0" style="width: 0%"></div></div>
+            </div>
+            <div>
+              <div class="confidence-row"><span>Minor</span><span id="cnnknn-score-1">0%</span></div>
+              <div class="confidence-track"><div class="confidence-fill minor" id="cnnknn-fill-1" style="width: 0%"></div></div>
+            </div>
+            <div>
+              <div class="confidence-row"><span>Major</span><span id="cnnknn-score-2">0%</span></div>
+              <div class="confidence-track"><div class="confidence-fill major" id="cnnknn-fill-2" style="width: 0%"></div></div>
+            </div>
+            <div>
+              <div class="confidence-row"><span>Destroyed</span><span id="cnnknn-score-3">0%</span></div>
+              <div class="confidence-track"><div class="confidence-fill destroyed" id="cnnknn-fill-3" style="width: 0%"></div></div>
+            </div>
+          </div>
+          <hr class="result-divider" />
+          <div class="result-accuracy-row">
+            <span class="result-accuracy-label">5-run accuracy</span>
+            <span class="result-accuracy-value" id="cnnknn-accuracy-value">69.14% +/- 2.84%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card fade-in" data-entrance="chart">
+        <div class="chart-label">Model confidence comparison</div>
+        <div class="chart-wrap">
+          <canvas id="confidence-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="results-note" id="results-note">Upload pre and post-disaster images to generate real model predictions.</div>
+
+      <button class="results-reset-btn" id="reset-analysis-btn">Analyze another image</button>
+    </div>
+  </div><!-- /screen-results -->
+
+  <!-- ══ SCREEN: ABOUT ══ -->
+  <div class="screen" id="screen-about">
+    <div class="about-inner">
+
+      <div class="about-card">
+        <div class="about-title">About this project</div>
+        <div class="about-description">This tool uses deep learning to assess building damage severity from pre and post-disaster satellite imagery. Built for AIL 201 — Artificial Intelligence Lab as a final project.</div>
+        <div class="about-stats">
+          <div class="about-stat">
+            <div class="about-stat-number" id="about-pair-count">2,799</div>
+            <div class="about-stat-label">Pre/post pairs</div>
+          </div>
+          <div class="about-stat">
+            <div class="about-stat-number">4</div>
+            <div class="about-stat-label">Damage classes</div>
+          </div>
+          <div class="about-stat">
+            <div class="about-stat-number" id="about-best-accuracy">69.14%</div>
+            <div class="about-stat-label">CNN+KNN 5-run accuracy</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-title">How it works</div>
+        <div class="about-stepper">
+          <div class="about-step">
+            <div class="about-step-circle">1</div>
+            <div class="about-step-content">
+              <div class="about-step-title">Upload satellite images</div>
+              <div class="about-step-desc">Provide pre and post-disaster imagery of the affected area</div>
+            </div>
+          </div>
+          <div class="about-step">
+            <div class="about-step-circle">2</div>
+            <div class="about-step-content">
+              <div class="about-step-title">Preprocessing</div>
+              <div class="about-step-desc">Images are resized to 256×256px, normalized, and combined as a 6-channel pre/post input</div>
+            </div>
+          </div>
+          <div class="about-step">
+            <div class="about-step-circle">3</div>
+            <div class="about-step-content">
+              <div class="about-step-title">CNN feature extraction</div>
+              <div class="about-step-desc">A Siamese MobileNetV2-based CNN extracts temporal damage features from the paired images</div>
+            </div>
+          </div>
+          <div class="about-step">
+            <div class="about-step-circle">4</div>
+            <div class="about-step-content">
+              <div class="about-step-title">Damage classification</div>
+              <div class="about-step-desc">CNN and CNN+KNN predict one of 4 damage levels with confidence scores</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-title">Dataset</div>
+        <div class="about-dataset">
+          <div class="about-dataset-row">
+            <div class="about-dataset-label">Name</div>
+            <div class="about-dataset-value">xBD (xView2 Challenge Dataset)</div>
+          </div>
+          <div class="about-dataset-row">
+            <div class="about-dataset-label">Source</div>
+            <div class="about-dataset-value">Kaggle / DigitalGlobe Maxar</div>
+          </div>
+          <div class="about-dataset-row">
+            <div class="about-dataset-label">Total images</div>
+            <div class="about-dataset-value">2,799 labeled pre/post image pairs</div>
+          </div>
+          <div class="about-dataset-row">
+            <div class="about-dataset-label">Image size</div>
+            <div class="about-dataset-value">1024 × 1024 raw images, resized to 256 × 256 for model input</div>
+          </div>
+          <div class="about-dataset-row">
+            <div class="about-dataset-label">Disaster types</div>
+            <div class="about-dataset-value">Flooding, wind, fire, earthquake, tsunami, and volcano events</div>
+          </div>
+          <div class="about-dataset-row">
+            <div class="about-dataset-label">Damage scale</div>
+            <div class="about-dataset-value">No damage, minor damage, major damage, destroyed</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="about-card">
+        <div class="about-title">Evaluation Visualizations</div>
+        <div class="about-description">These Matplotlib charts are generated from the final 5-run evaluation and best backend run. They are included for the report, viva, and model-performance review.</div>
+        <div class="matplotlib-grid">
+          <figure class="matplotlib-figure">
+            <img src="../static/visualizations/five_run_mean_std.png" alt="Five-run mean and standard deviation chart" />
+            <figcaption>5-run mean ± standard deviation for CNN and CNN+KNN.</figcaption>
+          </figure>
+          <figure class="matplotlib-figure">
+            <img src="../static/visualizations/run02_training_accuracy_loss.png" alt="Training accuracy and loss curve for selected run 02" />
+            <figcaption>Training and validation accuracy/loss for selected backend model run 02.</figcaption>
+          </figure>
+          <figure class="matplotlib-figure">
+            <img src="../static/visualizations/run02_cnn_confusion_matrix.png" alt="CNN confusion matrix for selected run 02" />
+            <figcaption>CNN confusion matrix for run 02 on the test split.</figcaption>
+          </figure>
+          <figure class="matplotlib-figure">
+            <img src="../static/visualizations/run02_cnn_knn_confusion_matrix.png" alt="CNN plus KNN confusion matrix for selected run 02" />
+            <figcaption>CNN+KNN confusion matrix for run 02 on the test split.</figcaption>
+          </figure>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /screen-about -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script src="../static/js/app.js"></script>
+</body>
+</html>

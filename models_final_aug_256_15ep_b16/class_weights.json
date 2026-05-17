@@ -1,0 +1,15 @@
+{
+  "label_order": [
+    "no-damage",
+    "minor-damage",
+    "major-damage",
+    "destroyed"
+  ],
+  "class_weights": {
+    "no-damage": 0.40948996655518394,
+    "minor-damage": 1.6772260273972603,
+    "major-damage": 1.6270764119601329,
+    "destroyed": 2.8808823529411764
+  },
+  "reason": "Computed from the training split to reduce class imbalance risk."
+}

@@ -1,0 +1,51 @@
+{
+  "dataset_root": "Full dataset",
+  "pairing_method": "matched pre/post files by shared image ID",
+  "labeling_method": "most severe building damage subtype from post-disaster JSON",
+  "model_input_plan": {
+    "pre_image": "128 x 128 x 3",
+    "post_image": "128 x 128 x 3",
+    "combined_pair": "128 x 128 x 6",
+    "channel_layout": "channels 0-2 = pre RGB, channels 3-5 = post RGB"
+  },
+  "total_complete_pairs": 2799,
+  "all_class_counts": {
+    "no-damage": 1709,
+    "minor-damage": 418,
+    "destroyed": 243,
+    "major-damage": 429
+  },
+  "balanced_samples_per_class": 243,
+  "balanced_total_pairs": 972,
+  "balanced_class_counts": {
+    "no-damage": 243,
+    "major-damage": 243,
+    "destroyed": 243,
+    "minor-damage": 243
+  },
+  "balanced_disaster_type_counts": {
+    "fire": 353,
+    "wind": 251,
+    "flooding": 307,
+    "tsunami": 40,
+    "earthquake": 15,
+    "volcano": 6
+  },
+  "balanced_disaster_counts": {
+    "socal-fire": 222,
+    "hurricane-matthew": 134,
+    "hurricane-florence": 112,
+    "midwest-flooding": 60,
+    "santa-rosa-wildfire": 131,
+    "palu-tsunami": 40,
+    "hurricane-michael": 117,
+    "hurricane-harvey": 135,
+    "mexico-earthquake": 15,
+    "guatemala-volcano": 6
+  },
+  "random_state": 42,
+  "outputs": {
+    "all_pairs_index": "dataset_work\\all_pairs_index.csv",
+    "balanced_pairs_index": "dataset_work\\balanced_pairs_index.csv"
+  }
+}
