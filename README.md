@@ -99,11 +99,10 @@ https://xview2.org/dataset
 Kaggle mirror:
 https://www.kaggle.com/datasets/tunguz/xview2-challenge-dataset-train-and-test/data
 
-Processed balanced dataset folder link:
-[Add Google Drive / OneDrive / Kaggle / Hugging Face link here]
+Processed balanced dataset folder and Trained Model link:
+[https://drive.google.com/drive/folders/1jO6sM5ITwhpdJQgm1GqR2TbwZUswZLKB?dmr=1&ec=wgc-drive-%5Bmodule%5D-goto]
 
-Final trained model artifacts link:
-[Add Google Drive / OneDrive / Hugging Face link here]
+
 ```
 
 If someone downloads the project from GitHub and only wants to run the web demo, they do **not** need `processed_balanced_pairs_256/`. They only need the final trained model artifacts. If they want to retrain/evaluate exactly from saved arrays, then they should download `processed_balanced_pairs_256/` from the external artifact link and place it in the project root.
